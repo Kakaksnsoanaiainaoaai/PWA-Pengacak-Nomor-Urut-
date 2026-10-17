@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BATTLE SOUND RANDOMIZER — CARNIVAL EDITION</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        display: ['Orbitron', 'sans-serif'],
+                    },
+                    colors: {
+                        battle: {
+                            red: '#ff1e38',
+                            darkRed: '#b91c1c',
+                            gold: '#fbbf24',
+                            dark: '#0a0a0c',
+                            card: '#121217',
+                            border: '#27272a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes pulseGlow {
+            0%, 100% { text-shadow: 0 0 20px rgba(255, 30, 56, 0.6), 0 0 40px rgba(255, 30, 56, 0.3); }
+            50% { text-shadow: 0 0 35px rgba(255, 30, 56, 0.9), 0 0 70px rgba(251, 191, 36, 0.5); }
+        }
+        @keyframes vsFlash {
+            0% { transform: scale(0.9); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 25px #fbbf24); }
+            100% { transform: scale(0.9); opacity: 0.8; }
+        }
+        @keyframes speakerVibrate {
+            0% { transform: translateY(0); }
+            25% { transform: translateY(-2px) scale(1.02); }
+            50% { transform: translateY(1px); }
+            75% { transform: translateY(-1px) scale(0.98); }
+            100% { transform: translateY(0); }
+        }
+        .animate-pulse-glow { animation: pulseGlow 2.5s infinite ease-in-out; }
+        .animate-vs { animation: vsFlash 1.5s infinite ease-in-out; }
+        .speaker-vibe { animation: speakerVibrate 0.3s infinite ease-in-out; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0c; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #ff1e38; }
+    </style>
+</head>
+<body class="bg-battle-dark text-white font-sans min-h-screen flex flex-col selection:bg-battle-red selection:text-white">
+
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <header class="bg-battle-card/80 backdrop-blur-md border-b border-battle-border sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div id="header-logo-container" class="w-12 h-12 rounded-xl bg-gradient-to-tr from-battle-red to-battle-gold flex items-center justify-center shadow-lg shadow-battle-red/30 text-2xl font-display font-black">
+                    <i class="fa-solid fa-volume-high"></i>
+                </div>
+                <div>
+                    <h1 id="header-event-name" class="font-display font-black text-lg sm:text-xl tracking-wider bg-gradient-to-r from-white via-zinc-200 to-battle-gold bg-clip-text text-transparent">
+                        CARNIVAL BATTLE SOUND
+                    </h1>
+                    <p id="header-subtitle" class="text-xs text-zinc-400 font-medium tracking-wide">
+                        Sistem Pengundian & Pertandingan Audio Profesional
+                    </p>
+                </div>
+            </div>
+
+            <!-- Desktop Navigation -->
+            <nav class="hidden lg:flex items-center gap-1 bg-zinc-900/80 p-1.5 rounded-2xl border border-battle-border">
+                <button onclick="switchTab('dashboard')" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 bg-battle-red text-white shadow-lg shadow-battle-red/30" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </button>
+                <button onclick="switchTab('participants')" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-zinc-400 hover:text-white hover:bg-zinc-800" data-tab="participants">
+                    <i class="fa-solid fa-users-gear"></i> Peserta (<span id="participant-count-badge">0</span>)
+                </button>
+                <button onclick="switchTab('draw')" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-zinc-400 hover:text-white hover:bg-zinc-800" data-tab="draw">
+                    <i class="fa-solid fa-shuffle"></i> Undian & VS Stage
+                </button>
+                <button onclick="switchTab('tournament')" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-zinc-400 hover:text-white hover:bg-zinc-800" data-tab="tournament">
+                    <i class="fa-solid fa-trophy"></i> Babak & Hasil
+                </button>
+                <button onclick="switchTab('settings')" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-zinc-400 hover:text-white hover:bg-zinc-800" data-tab="settings">
+                    <i class="fa-solid fa-gear"></i> Pengaturan
+                </button>
+            </nav>
+
+            <div class="flex items-center gap-2">
+                <button onclick="toggleFullscreen()" title="Layar Penuh / Videotron" class="w-10 h-10 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-battle-border flex items-center justify-center text-zinc-300 hover:text-white transition">
+                    <i class="fa-solid fa-expand"></i>
+                </button>
+                <button onclick="openPresentationMode()" title="Mode Presentasi" class="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 transition">
+                    <i class="fa-solid fa-tv"></i> Videotron
+                </button>
+                <button onclick="mobileMenuToggle()" class="lg:hidden w-10 h-10 rounded-xl bg-zinc-800 text-zinc-300 flex items-center justify-center">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Nav Drawer -->
+        <div id="mobile-menu" class="hidden lg:hidden border-t border-battle-border bg-battle-card px-4 py-3 flex flex-col gap-2">
+            <button onclick="switchTab('dashboard'); mobileMenuToggle();" class="mobile-tab-btn px-4 py-3 rounded-xl text-left font-semibold flex items-center gap-3 bg-battle-red text-white" data-tab="dashboard">
+                <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
+            </button>
+            <button onclick="switchTab('participants'); mobileMenuToggle();" class="mobile-tab-btn px-4 py-3 rounded-xl text-left font-semibold flex items-center gap-3 text-zinc-300 hover:bg-zinc-800" data-tab="participants">
+                <i class="fa-solid fa-users-gear w-5"></i> Kelola Peserta
+            </button>
+            <button onclick="switchTab('draw'); mobileMenuToggle();" class="mobile-tab-btn px-4 py-3 rounded-xl text-left font-semibold flex items-center gap-3 text-zinc-300 hover:bg-zinc-800" data-tab="draw">
+                <i class="fa-solid fa-shuffle w-5"></i> Undian & VS Stage
+            </button>
+            <button onclick="switchTab('tournament'); mobileMenuToggle();" class="mobile-tab-btn px-4 py-3 rounded-xl text-left font-semibold flex items-center gap-3 text-zinc-300 hover:bg-zinc-800" data-tab="tournament">
+                <i class="fa-solid fa-trophy w-5"></i> Babak & Hasil
+            </button>
+            <button onclick="switchTab('settings'); mobileMenuToggle();" class="mobile-tab-btn px-4 py-3 rounded-xl text-left font-semibold flex items-center gap-3 text-zinc-300 hover:bg-zinc-800" data-tab="settings">
+                <i class="fa-solid fa-gear w-5"></i> Pengaturan
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- TAB 1: DASHBOARD -->
+        <section id="tab-dashboard" class="tab-content space-y-8">
+            <!-- Hero Banner -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-zinc-900 via-zinc-900 to-battle-dark border border-battle-border p-8 sm:p-12 shadow-2xl">
+                <div class="absolute -right-10 -bottom-10 w-96 h-96 bg-battle-red/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -left-10 -top-10 w-96 h-96 bg-battle-gold/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="relative z-10 max-w-2xl space-y-4">
+                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-battle-red/20 text-battle-red border border-battle-red/30 text-xs font-bold uppercase tracking-widest">
+                        <i class="fa-solid fa-fire animate-bounce"></i> Karnaval Battle Sound 2026
+                    </span>
+                    <h2 id="dashboard-welcome-title" class="text-3xl sm:text-5xl font-display font-black tracking-tight text-white">
+                        SIAPKAN SOUND SYSTEM TERKERENMU!
+                    </h2>
+                    <p id="dashboard-welcome-desc" class="text-zinc-400 text-sm sm:text-base">
+                        Sistem pengundian pasangan battle sound secara adil, transparan, dan dilengkapi animasi panggung profesional untuk event karnaval Anda.
+                    </p>
+                    <div class="flex flex-wrap gap-4 pt-4">
+                        <button onclick="switchTab('draw')" class="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-battle-red to-battle-darkRed hover:from-red-600 hover:to-red-700 text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-battle-red/40 flex items-center gap-3 transition">
+                            <i class="fa-solid fa-shuffle text-lg"></i> Mulai Pengundian Battle
+                        </button>
+                        <button onclick="switchTab('participants')" class="px-6 py-3.5 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-sm border border-battle-border flex items-center gap-3 transition">
+                            <i class="fa-solid fa-users text-battle-gold"></i> Kelola Peserta
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-battle-card border border-battle-border rounded-2xl p-6 flex items-center justify-between shadow-lg">
+                    <div>
+                        <p class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Total Peserta</p>
+                        <h3 id="stat-total-participants" class="text-3xl font-display font-black text-white mt-1">0</h3>
+                    </div>
+                    <div class="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 text-battle-red flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+                <div class="bg-battle-card border border-battle-border rounded-2xl p-6 flex items-center justify-between shadow-lg">
+                    <div>
+                        <p class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Pasangan Terbentuk</p>
+                        <h3 id="stat-total-pairs" class="text-3xl font-display font-black text-white mt-1">0</h3>
+                    </div>
+                    <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-battle-gold flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-handshake"></i>
+                    </div>
+                </div>
+                <div class="bg-battle-card border border-battle-border rounded-2xl p-6 flex items-center justify-between shadow-lg">
+                    <div>
+                        <p class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Babak Aktif</p>
+                        <h3 id="stat-active-round" class="text-xl font-display font-black text-white mt-1 truncate max-w-[150px]">Penyisihan</h3>
+                    </div>
+                    <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                </div>
+                <div class="bg-battle-card border border-battle-border rounded-2xl p-6 flex items-center justify-between shadow-lg">
+                    <div>
+                        <p class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Status Undian</p>
+                        <h3 id="stat-draw-status" class="text-lg font-display font-black text-amber-400 mt-1">Belum Diacak</h3>
+                    </div>
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Guide / Info -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-battle-card border border-battle-border rounded-2xl p-6 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-battle-red/20 text-battle-red flex items-center justify-center font-bold">1</div>
+                    <h4 class="font-display font-bold text-lg text-white">Input Peserta Sound</h4>
+                    <p class="text-xs text-zinc-400 leading-relaxed">Masukkan daftar peserta satu per satu atau gunakan fitur tempel massal (paste dari catatan/Excel) serta impor file TXT/CSV.</p>
+                </div>
+                <div class="bg-battle-card border border-battle-border rounded-2xl p-6 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-battle-gold/20 text-battle-gold flex items-center justify-center font-bold">2</div>
+                    <h4 class="font-display font-bold text-lg text-white">Acak Pasangan Adil</h4>
+                    <p class="text-xs text-zinc-400 leading-relaxed">Gunakan tombol Acak dengan algoritma Fisher-Yates berbasis kriptografi. Sistem secara otomatis mengatur BYE jika peserta ganjil.</p>
+                </div>
+                <div class="bg-battle-card border border-battle-border rounded-2xl p-6 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">3</div>
+                    <h4 class="font-display font-bold text-lg text-white">Tampilan VS Panggung</h4>
+                    <p class="text-xs text-zinc-400 leading-relaxed">Tampilkan layar pertandingan di proyektor atau videotron dengan animasi dramatis, navigasi battle, dan ekspor hasil ke WhatsApp.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-participants" class="tab-content hidden space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-battle-card border border-battle-border p-6 rounded-3xl">
+                <div>
+                    <h3 class="font-display font-black text-2xl text-white">MANAJEMEN PESERTA SOUND</h3>
+                    <p class="text-xs text-zinc-400 mt-1">Tambah, edit, hapus, atau impor daftar peserta battle sound karnaval.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="openModal('modal-add-participant')" class="px-4 py-2.5 rounded-xl bg-battle-red hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-battle-red/30 flex items-center gap-2 transition">
+                        <i class="fa-solid fa-user-plus"></i> Tambah Peserta
+                    </button>
+                    <button onclick="openModal('modal-bulk-add')" class="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs border border-battle-border flex items-center gap-2 transition">
+                        <i class="fa-solid fa-file-lines"></i> Tempel Massal
+                    </button>
+                    <label class="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs border border-battle-border flex items-center gap-2 cursor-pointer transition">
+                        <i class="fa-solid fa-file-arrow-up"></i> Impor TXT/CSV
+                        <input type="file" id="import-file" accept=".txt,.csv" class="hidden" onchange="importFromFile(event)">
+                    </label>
+                    <button onclick="confirmClearParticipants()" class="px-3 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/50 text-xs font-semibold flex items-center gap-2 transition">
+                        <i class="fa-solid fa-trash-can"></i> Hapus Semua
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search and Filter Bar -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="relative w-full sm:w-80">
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"></i>
+                    <input type="text" id="search-participant" oninput="renderParticipantsList()" placeholder="Cari nama peserta sound..." class="w-full bg-battle-card border border-battle-border rounded-2xl pl-11 pr-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-battle-red transition">
+                </div>
+                <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                    <span class="text-xs text-zinc-400 font-medium">Total: <strong id="participant-count-total" class="text-white text-sm">0</strong> Sound</span>
+                    <button onclick="exportBackup()" class="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold border border-battle-border flex items-center gap-2 transition">
+                        <i class="fa-solid fa-download"></i> Cadangan JSON
+                    </button>
+                </div>
+            </div>
+
+            <!-- Participants Table / Cards Grid -->
+            <div class="bg-battle-card border border-battle-border rounded-3xl overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-battle-border bg-zinc-900/50 text-zinc-400 text-xs uppercase font-display tracking-wider">
+                                <th class="p-4 sm:px-6">No</th>
+                                <th class="p-4 sm:px-6">Nama Peserta / Sound System</th>
+                                <th class="p-4 sm:px-6">Asal / Kota</th>
+                                <th class="p-4 sm:px-6">Kategori / Keterangan</th>
+                                <th class="p-4 sm:px-6 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="participants-table-body" class="divide-y divide-zinc-800 text-sm">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="participants-empty-state" class="hidden p-12 text-center flex flex-col items-center justify-center gap-3">
+                    <div class="w-16 h-16 rounded-2xl bg-zinc-800 text-zinc-500 flex items-center justify-center text-3xl">
+                        <i class="fa-solid fa-volume-xmark"></i>
+                    </div>
+                    <p class="text-zinc-400 font-medium">Belum ada peserta yang ditambahkan.</p>
+                    <button onclick="openModal('modal-add-participant')" class="px-4 py-2 rounded-xl bg-battle-red text-white text-xs font-bold uppercase">Tambah Sekarang</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-draw" class="tab-content hidden space-y-8">
+            <!-- Draw Settings Header -->
+            <div class="bg-battle-card border border-battle-border p-6 rounded-3xl flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div>
+                    <span class="text-xs text-battle-gold font-bold uppercase tracking-widest">Sistem Pengundian Profesional</span>
+                    <h3 class="font-display font-black text-2xl text-white mt-1">ACAK PASANGAN BATTLE SOUND</h3>
+                    <p class="text-xs text-zinc-400 mt-1">Pengundian menggunakan algoritma Fisher-Yates dengan keamanan kriptografi.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2 bg-zinc-900 px-4 py-2.5 rounded-2xl border border-battle-border">
+                        <span class="text-xs text-zinc-400">Kebijakan Ganjil:</span>
+                        <select id="odd-policy" onchange="updateOddPolicy(this.value)" class="bg-transparent text-xs font-bold text-battle-gold focus:outline-none">
+                            <option value="bye" class="bg-zinc-900">BYE (Lolos Otomatis)</option>
+                            <option value="trio" class="bg-zinc-900">Battle Trio (3 Sound)</option>
+                        </select>
+                    </div>
+                    <button onclick="executeDraw()" id="btn-execute-draw" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-battle-red to-battle-darkRed hover:from-red-600 hover:to-red-700 text-white font-display font-bold text-sm uppercase tracking-wider shadow-lg shadow-battle-red/40 flex items-center gap-3 transition">
+                        <i class="fa-solid fa-shuffle text-lg"></i> ACAK PASANGAN BATTLE
+                    </button>
+                    <button onclick="confirmResetDraw()" id="btn-reset-draw" class="hidden px-4 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold uppercase border border-battle-border flex items-center gap-2 transition">
+                        <i class="fa-solid fa-rotate-right"></i> Acak Ulang
+                    </button>
+                </div>
+            </div>
+
+            <!-- VS Stage Display Container -->
+            <div id="vs-stage-container" class="hidden space-y-6">
+                <!-- Navigation & Indicator -->
+                <div class="flex items-center justify-between bg-battle-card border border-battle-border px-6 py-4 rounded-2xl">
+                    <div class="flex items-center gap-3">
+                        <span id="current-battle-badge" class="px-3 py-1 rounded-lg bg-battle-red/20 text-battle-red border border-battle-red/30 text-xs font-bold font-display uppercase tracking-wider">
+                            BATTLE 1 / 8
+                        </span>
+                        <span id="current-round-label" class="text-xs font-semibold text-zinc-400 uppercase">Babak Penyisihan</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="prevBattle()" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold flex items-center gap-2 border border-battle-border transition">
+                            <i class="fa-solid fa-chevron-left"></i> Sebelumnya
+                        </button>
+                        <button onclick="nextBattle()" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold flex items-center gap-2 border border-battle-border transition">
+                            Selanjutnya <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        <button onclick="openAllPairsModal()" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-battle-gold/20 hover:bg-battle-gold/30 text-battle-gold border border-battle-gold/30 text-xs font-bold transition">
+                            <i class="fa-solid fa-list-check"></i> Semua Pasangan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dramatic VS Stage Card -->
+                <div class="relative overflow-hidden rounded-3xl bg-gradient-to-b from-zinc-900 via-battle-card to-black border-2 border-battle-border p-8 sm:p-14 shadow-2xl">
+                    <!-- Background ambient lighting -->
+                    <div class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+                        <div class="w-[600px] h-[600px] bg-battle-red rounded-full blur-[120px]"></div>
+                    </div>
+
+                    <div class="relative z-10 grid grid-cols-1 lg:grid-cols-11 gap-8 items-center">
+                        <!-- Sound A (Left Side) -->
+                        <div class="lg:col-span-5 bg-zinc-900/90 border-2 border-red-500/30 hover:border-red-500/60 rounded-3xl p-8 text-center space-y-4 shadow-2xl shadow-red-950/50 transition duration-300">
+                            <div class="w-16 h-16 mx-auto rounded-2xl bg-red-500/10 border border-red-500/30 text-battle-red flex items-center justify-center text-3xl speaker-vibe">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </div>
+                            <span class="text-xs font-display font-bold tracking-widest text-red-400 uppercase">Sound System A</span>
+                            <h3 id="display-sound-a" class="text-2xl sm:text-4xl font-display font-black text-white tracking-wide uppercase drop-shadow-md">
+                                —
+                            </h3>
+                            <p id="display-origin-a" class="text-xs text-zinc-400 font-medium">Asal: —</p>
+                            
+                            <div class="pt-4 border-t border-zinc-800 flex items-center justify-center gap-3">
+                                <button onclick="setWinner(0)" id="btn-winner-a" class="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-green-600 text-zinc-300 hover:text-white text-xs font-bold uppercase transition flex items-center gap-2">
+                                    <i class="fa-solid fa-check"></i> Pilih Pemenang A
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- VS Center Badge -->
+                        <div class="lg:col-span-1 flex flex-col items-center justify-center my-2 lg:my-0">
+                            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-battle-red via-battle-gold to-orange-600 flex items-center justify-center shadow-2xl shadow-battle-red/60 animate-vs border-4 border-black">
+                                <span class="font-display font-black text-2xl sm:text-3xl italic text-black tracking-tighter">VS</span>
+                            </div>
+                            <span id="display-battle-num" class="text-xs font-display font-bold text-zinc-500 uppercase mt-3 tracking-widest">Match #1</span>
+                        </div>
+
+                        <!-- Sound B (Right Side) -->
+                        <div class="lg:col-span-5 bg-zinc-900/90 border-2 border-amber-500/30 hover:border-amber-500/60 rounded-3xl p-8 text-center space-y-4 shadow-2xl shadow-amber-950/50 transition duration-300">
+                            <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 text-battle-gold flex items-center justify-center text-3xl speaker-vibe">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </div>
+                            <span class="text-xs font-display font-bold tracking-widest text-amber-400 uppercase">Sound System B</span>
+                            <h3 id="display-sound-b" class="text-2xl sm:text-4xl font-display font-black text-white tracking-wide uppercase drop-shadow-md">
+                                —
+                            </h3>
+                            <p id="display-origin-b" class="text-xs text-zinc-400 font-medium">Asal: —</p>
+                            
+                            <div class="pt-4 border-t border-zinc-800 flex items-center justify-center gap-3">
+                                <button onclick="setWinner(1)" id="btn-winner-b" class="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-green-600 text-zinc-300 hover:text-white text-xs font-bold uppercase transition flex items-center gap-2">
+                                    <i class="fa-solid fa-check"></i> Pilih Pemenang B
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Winner status banner if decided -->
+                    <div id="winner-banner" class="hidden mt-8 p-4 rounded-2xl bg-green-950/50 border border-green-500/40 text-center">
+                        <p class="text-xs text-green-400 font-bold uppercase tracking-wider"><i class="fa-solid fa-trophy mr-2"></i> Pemenang Battle Ini: <span id="winner-name-display" class="text-white text-sm font-black">---</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State for Draw -->
+            <div id="draw-empty-state" class="bg-battle-card border border-battle-border rounded-3xl p-16 text-center flex flex-col items-center justify-center gap-4">
+                <div class="w-20 h-20 rounded-3xl bg-zinc-800 text-zinc-500 flex items-center justify-center text-4xl">
+                    <i class="fa-solid fa-dice"></i>
+                </div>
+                <div class="max-w-md space-y-1">
+                    <h4 class="font-display font-bold text-xl text-white">Undian Belum Dilakukan</h4>
+                    <p class="text-xs text-zinc-400">Tambahkan peserta sound terlebih dahulu, lalu klik tombol "Acak Pasangan Battle" di atas untuk memulai kompetisi.</p>
+                </div>
+                <button onclick="switchTab('participants')" class="px-5 py-2.5 rounded-xl bg-battle-red text-white text-xs font-bold uppercase tracking-wider">Kelola Peserta Sekarang</button>
+            </div>
+        </section>
+
+        <section id="tab-tournament" class="tab-content hidden space-y-8">
+            <div class="bg-battle-card border border-battle-border p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h3 class="font-display font-black text-2xl text-white">BABAK KOMPETISI & HASIL</h3>
+                    <p class="text-xs text-zinc-400 mt-1">Daftar lengkap seluruh pasangan battle dan rekapitulasi pemenang.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="printResults()" class="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold border border-battle-border flex items-center gap-2 transition">
+                        <i class="fa-solid fa-print"></i> Cetak / PDF
+                    </button>
+                    <button onclick="copyWhatsAppResults()" class="px-4 py-2.5 rounded-xl bg-green-700 hover:bg-green-600 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-green-900/30 transition">
+                        <i class="fa-brands fa-whatsapp text-base"></i> Salin ke WhatsApp
+                    </button>
+                </div>
+            </div>
+
+            <!-- All Pairs Table Card -->
+            <div class="bg-battle-card border border-battle-border rounded-3xl overflow-hidden shadow-xl">
+                <div class="p-6 border-b border-battle-border flex items-center justify-between">
+                    <h4 class="font-display font-bold text-lg text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list text-battle-gold"></i> Rekapitulasi Pasangan Battle (<span id="recap-round-name">Penyisihan</span>)
+                    </h4>
+                    <span id="recap-timestamp" class="text-xs text-zinc-500">Waktu Undian: Belum ada</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-battle-border bg-zinc-900/50 text-zinc-400 text-xs uppercase font-display tracking-wider">
+                                <th class="p-4 sm:px-6">Match</th>
+                                <th class="p-4 sm:px-6">Sound System A</th>
+                                <th class="p-4 sm:px-6 text-center">VS</th>
+                                <th class="p-4 sm:px-6">Sound System B</th>
+                                <th class="p-4 sm:px-6">Pemenang</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recap-table-body" class="divide-y divide-zinc-800 text-sm">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="recap-empty-state" class="p-12 text-center text-zinc-400 text-xs">
+                    Belum ada data pasangan battle. Silakan lakukan pengundian terlebih dahulu.
+                </div>
+            </div>
+
+            <!-- Next Round Progression Card -->
+            <div class="bg-battle-card border border-battle-border p-6 rounded-3xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="font-display font-bold text-lg text-white">Lanjutkan ke Babak Berikutnya</h4>
+                        <p class="text-xs text-zinc-400">Kumpulkan pemenang dari babak ini untuk otomatis dimasukkan ke daftar peserta babak selanjutnya.</p>
+                    </div>
+                    <button onclick="advanceWinnersToNextRound()" class="px-5 py-3 rounded-xl bg-battle-gold hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 transition flex items-center gap-2">
+                        <i class="fa-solid fa-forward-step"></i> Buat Babak Selanjutnya
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-settings" class="tab-content hidden space-y-6">
+            <div class="bg-battle-card border border-battle-border p-6 rounded-3xl">
+                <h3 class="font-display font-black text-2xl text-white">PENGATURAN ACARA</h3>
+                <p class="text-xs text-zinc-400 mt-1">Sesuaikan identitas karnaval, nama acara, dan konfigurasi tampilan.</p>
+            </div>
+
+            <div class="bg-battle-card border border-battle-border rounded-3xl p-6 sm:p-8 space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Nama Acara Karnaval</label>
+                        <input type="text" id="setting-event-name" class="w-full bg-zinc-900 border border-battle-border rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-battle-red">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Judul Battle Sound</label>
+                        <input type="text" id="setting-battle-title" class="w-full bg-zinc-900 border border-battle-border rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-battle-red">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Nama Babak Aktif</label>
+                        <input type="text" id="setting-round-name" class="w-full bg-zinc-900 border border-battle-border rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-battle-red">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Tanggal & Lokasi Acara</label>
+                        <input type="text" id="setting-event-location" class="w-full bg-zinc-900 border border-battle-border rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-battle-red" placeholder="Contoh: Alun-Alun Kota, 25 Oktober 2026">
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-zinc-800 flex justify-end gap-3">
+                    <button onclick="saveSettings()" class="px-6 py-3 rounded-2xl bg-battle-red hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-battle-red/30 transition">
+                        Simpan Pengaturan
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Add Participant Modal -->
+    <div id="modal-add-participant" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="bg-battle-card border border-battle-border rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h4 class="font-display font-bold text-lg text-white">Tambah Peserta Sound</h4>
+                <button onclick="closeModal('modal-add-participant')" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="addParticipantSubmit(event)" class="space-y-4">
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-zinc-400 uppercase">Nama Sound System / Peserta *</label>
+                    <input type="text" id="input-new-name" required placeholder="Contoh: Brewog Audio / Megatronic" class="w-full bg-zinc-900 border border-battle-border rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-battle-red">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-zinc-400 uppercase">Asal / Kota</label>
+                    <input type="text" id="input-new-origin" placeholder="Contoh: Blitar, Jatim" class="w-full bg-zinc-900 border border-battle-border rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-battle-red">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-zinc-400 uppercase">Kategori / Spesifikasi</label>
+                    <input type="text" id="input-new-category" placeholder="Contoh: 12 Subwoofer Karnaval" class="w-full bg-zinc-900 border border-battle-border rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-battle-red">
+                </div>
+                <div class="pt-2 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-add-participant')" class="px-4 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-semibold">Batal</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-battle-red text-white text-xs font-bold uppercase">Simpan Peserta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Add Modal -->
+    <div id="modal-bulk-add" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="bg-battle-card border border-battle-border rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h4 class="font-display font-bold text-lg text-white">Tempel Daftar Peserta Massal</h4>
+                <button onclick="closeModal('modal-bulk-add')" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-zinc-400 uppercase">Tempel daftar (1 nama per baris)</label>
+                <textarea id="bulk-textarea" rows="6" placeholder="Sound A
+Sound B
+Sound C..." class="w-full bg-zinc-900 border border-battle-border rounded-2xl p-4 text-sm text-white focus:outline-none focus:border-battle-red"></textarea>
+            </div>
+            <div class="pt-2 flex justify-end gap-3">
+                <button onclick="closeModal('modal-bulk-add')" class="px-4 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-semibold">Batal</button>
+                <button onclick="processBulkAdd()" class="px-5 py-2.5 rounded-xl bg-battle-red text-white text-xs font-bold uppercase">Impor Daftar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Pairs Modal -->
+    <div id="modal-all-pairs" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="bg-battle-card border border-battle-border rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-6 border-b border-battle-border flex items-center justify-between">
+                <h4 class="font-display font-bold text-lg text-white">Semua Pasangan Battle Terbentuk</h4>
+                <button onclick="closeModal('modal-all-pairs')" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 space-y-3" id="all-pairs-modal-list">
+                <!-- Dynamically populated -->
+            </div>
+            <div class="p-4 border-t border-battle-border bg-zinc-900/50 flex justify-end">
+                <button onclick="closeModal('modal-all-pairs')" class="px-5 py-2 rounded-xl bg-zinc-800 text-white text-xs font-bold">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // App State
+        let state = {
+            eventName: "CARNIVAL BATTLE SOUND 2026",
+            battleTitle: "BATTLE SOUND SYSTEM — CARNIVAL EDITION",
+            roundName: "Babak Penyisihan",
+            eventLocation: "Alun-Alun Kota, 25 Oktober 2026",
+            oddPolicy: "bye", // 'bye' or 'trio'
+            participants: [
+                { id: 1, name: "Brewog Audio", origin: "Blitar", category: "Subwoofer 18 Inch" },
+                { id: 2, name: "Megatronic Audio", origin: "Malang", category: "Line Array Pro" },
+                { id: 3, name: "Samber Gledek", origin: "Kediri", category: "Custom Sub 21 Inch" },
+                { id: 4, name: "Horeg Bass Power", origin: "Tulungagung", category: "Full Range Audio" },
+                { id: 5, name: "Demit Sound", origin: "Nganjuk", category: "Turbo Sound" },
+                { id: 6, name: "Black Shark Audio", origin: "Trenggalek", category: "Karnaval Spec" }
+            ],
+            pairs: [], // [{ id: 1, soundA: {...}, soundB: {...}, winner: null }]
+            currentPairIndex: 0,
+            drawTimestamp: null
+        };
+
+        // Initialize on load
+        window.onload = function() {
+            loadFromLocalStorage();
+            renderAll();
+        };
+
+        // Local Storage Management
+        function saveToLocalStorage() {
+            localStorage.setItem('battle_sound_state', JSON.stringify(state));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('battle_sound_state');
+            if (saved) {
+                try {
+                    state = JSON.parse(saved);
+                } catch(e) {
+                    console.error("Error loading state", e);
+                }
+            }
+        }
+
+        // Render All UI elements
+        function renderAll() {
+            // Header
+            document.getElementById('header-event-name').innerText = state.eventName;
+            document.getElementById('header-subtitle').innerText = state.battleTitle;
+            document.getElementById('participant-count-badge').innerText = state.participants.length;
+
+            // Dashboard stats
+            document.getElementById('stat-total-participants').innerText = state.participants.length;
+            document.getElementById('stat-total-pairs').innerText = state.pairs.length;
+            document.getElementById('stat-active-round').innerText = state.roundName;
+            document.getElementById('stat-draw-status').innerText = state.pairs.length > 0 ? "Sudah Diacak" : "Belum Diacak";
+
+            // Settings Inputs
+            document.getElementById('setting-event-name').value = state.eventName;
+            document.getElementById('setting-battle-title').value = state.battleTitle;
+            document.getElementById('setting-round-name').value = state.roundName;
+            document.getElementById('setting-event-location').value = state.eventLocation;
+            document.getElementById('odd-policy').value = state.oddPolicy;
+
+            renderParticipantsList();
+            renderDrawSection();
+            renderRecapTable();
+        }
+
+        // Tab Navigation
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.tab === tabId) {
+                    btn.classList.add('bg-battle-red', 'text-white', 'shadow-lg', 'shadow-battle-red/30');
+                    btn.classList.remove('text-zinc-400', 'hover:text-white', 'hover:bg-zinc-800');
+                } else {
+                    btn.classList.remove('bg-battle-red', 'text-white', 'shadow-lg', 'shadow-battle-red/30');
+                    btn.classList.add('text-zinc-400', 'hover:text-white', 'hover:bg-zinc-800');
+                }
+            });
+        }
+
+        function mobileMenuToggle() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Toast notifications
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-2xl text-xs font-bold text-white shadow-xl pointer-events-auto transition transform translate-y-2 opacity-0 flex items-center gap-3 border ${type === 'success' ? 'bg-zinc-900 border-green-500/50 text-green-400' : 'bg-zinc-900 border-red-500/50 text-red-400'}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check text-green-400' : 'fa-circle-exclamation text-red-400'}"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 50);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Modal Controls
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+
+        // Participant CRUD
+        function renderParticipantsList() {
+            const query = document.getElementById('search-participant').value.toLowerCase();
+            const tbody = document.getElementById('participants-table-body');
+            const emptyState = document.getElementById('participants-empty-state');
+            tbody.innerHTML = '';
+
+            const filtered = state.participants.filter(p => p.name.toLowerCase().includes(query) || (p.origin && p.origin.toLowerCase().includes(query)));
+            document.getElementById('participant-count-total').innerText = state.participants.length;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach((p, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-zinc-900/60 transition';
+                tr.innerHTML = `
+                    <td class="p-4 sm:px-6 text-zinc-500 font-mono text-xs">${index + 1}</td>
+                    <td class="p-4 sm:px-6 font-bold text-white">${escapeHtml(p.name)}</td>
+                    <td class="p-4 sm:px-6 text-zinc-300">${escapeHtml(p.origin || '-')}</td>
+                    <td class="p-4 sm:px-6 text-zinc-400 text-xs">${escapeHtml(p.category || '-')}</td>
+                    <td class="p-4 sm:px-6 text-right">
+                        <button onclick="editParticipant(${p.id})" class="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 inline-flex items-center justify-center mr-1" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button onclick="deleteParticipant(${p.id})" class="w-8 h-8 rounded-lg bg-red-950/50 hover:bg-red-900 text-red-400 inline-flex items-center justify-center" title="Hapus"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addParticipantSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('input-new-name').value.trim();
+            const origin = document.getElementById('input-new-origin').value.trim();
+            const category = document.getElementById('input-new-category').value.trim();
+
+            if (!name) return;
+
+            const newId = state.participants.length > 0 ? Math.max(...state.participants.map(p => p.id)) + 1 : 1;
+            state.participants.push({ id: newId, name, origin, category });
+            saveToLocalStorage();
+            renderAll();
+            closeModal('modal-add-participant');
+            document.getElementById('input-new-name').value = '';
+            document.getElementById('input-new-origin').value = '';
+            document.getElementById('input-new-category').value = '';
+            showToast(`Peserta "${name}" berhasil ditambahkan!`);
+        }
+
+        function deleteParticipant(id) {
+            if (confirm("Yakin ingin menghapus peserta ini?")) {
+                state.participants = state.participants.filter(p => p.id !== id);
+                saveToLocalStorage();
+                renderAll();
+                showToast("Peserta berhasil dihapus.", "error");
+            }
+        }
+
+        function editParticipant(id) {
+            const p = state.participants.find(item => item.id === id);
+            if (!p) return;
+            const newName = prompt("Edit Nama Peserta Sound:", p.name);
+            if (newName !== null && newName.trim() !== "") {
+                const newOrigin = prompt("Edit Asal / Kota:", p.origin || "");
+                p.name = newName.trim();
+                p.origin = newOrigin ? newOrigin.trim() : "";
+                saveToLocalStorage();
+                renderAll();
+                showToast("Data peserta berhasil diperbarui!");
+            }
+        }
+
+        function processBulkAdd() {
+            const text = document.getElementById('bulk-textarea').value;
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length === 0) {
+                showToast("Tidak ada teks yang dimasukkan.", "error");
+                return;
+            }
+
+            let maxId = state.participants.length > 0 ? Math.max(...state.participants.map(p => p.id)) : 0;
+            lines.forEach(line => {
+                maxId++;
+                state.participants.push({ id: maxId, name: line, origin: "Karnaval", category: "Standard" });
+            });
+
+            saveToLocalStorage();
+            renderAll();
+            closeModal('modal-bulk-add');
+            document.getElementById('bulk-textarea').value = '';
+            showToast(`Berhasil menambahkan ${lines.length} peserta!`);
+        }
+
+        function importFromFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const content = event.target.result;
+                const lines = content.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+                let maxId = state.participants.length > 0 ? Math.max(...state.participants.map(p => p.id)) : 0;
+                lines.forEach(line => {
+                    maxId++;
+                    state.participants.push({ id: maxId, name: line, origin: "Impor", category: "Audio" });
+                });
+                saveToLocalStorage();
+                renderAll();
+                showToast(`Berhasil mengimpor ${lines.length} peserta dari file!`);
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmClearParticipants() {
+            if (confirm("PERINGATAN: Semua daftar peserta akan dihapus. Lanjutkan?")) {
+                state.participants = [];
+                state.pairs = [];
+                saveToLocalStorage();
+                renderAll();
+                showToast("Semua peserta telah dihapus.", "error");
+            }
+        }
+
+        // Fisher-Yates Shuffle with Crypto Random Values
+        function secureShuffle(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const randomBuffer = new Uint32Array(1);
+                if (window.crypto && window.crypto.getRandomValues) {
+                    window.crypto.getRandomValues(randomBuffer);
+                } else {
+                    randomBuffer[0] = Math.floor(Math.random() * 0xFFFFFFFF);
+                }
+                const j = randomBuffer[0] % (i + 1);
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Execution of Draw
+        function executeDraw() {
+            if (state.participants.length < 2) {
+                showToast("Minimal butuh 2 peserta untuk melakukan undian battle!", "error");
+                return;
+            }
+
+            if (state.pairs.length > 0) {
+                if (!confirm("Pengundian sebelumnya sudah ada. Apakah Anda ingin mengacak ulang seluruh pasangan?")) {
+                    return;
+                }
+            }
+
+            const shuffled = secureShuffle(state.participants);
+            state.pairs = [];
+            
+            let i = 0;
+            let matchCounter = 1;
+            while (i < shuffled.length) {
+                if (i === shuffled.length - 1 && state.oddPolicy === 'bye') {
+                    // Last odd participant gets a BYE
+                    state.pairs.push({
+                        matchNum: matchCounter,
+                        soundA: shuffled[i],
+                        soundB: { id: 0, name: "BYE (Lolos Otomatis)", origin: "-", category: "-" },
+                        winner: shuffled[i] // Automatically win BYE
+                    });
+                    i++;
+                } else if (i <= shuffled.length - 2) {
+                    state.pairs.push({
+                        matchNum: matchCounter,
+                        soundA: shuffled[i],
+                        soundB: shuffled[i+1],
+                        winner: null
+                    });
+                    i += 2;
+                } else if (i === shuffled.length - 1 && state.oddPolicy === 'trio') {
+                    // Attach to previous match or handle trio
+                    if (state.pairs.length > 0) {
+                        state.pairs[state.pairs.length - 1].soundC = shuffled[i];
+                    } else {
+                        state.pairs.push({
+                            matchNum: matchCounter,
+                            soundA: shuffled[i],
+                            soundB: { id: -1, name: "Trio Solo", origin: "-", category: "-" },
+                            winner: null
+                        });
+                    }
+                    i++;
+                }
+                matchCounter++;
+            }
+
+            state.currentPairIndex = 0;
+            state.drawTimestamp = new Date().toLocaleString('id-ID');
+            saveToLocalStorage();
+            renderAll();
+            showToast("Pengundian pasangan battle berhasil dilakukan!");
+        }
+
+        function confirmResetDraw() {
+            if (confirm("Yakin ingin mengacak ulang pasangan battle?")) {
+                executeDraw();
+            }
+        }
+
+        function updateOddPolicy(val) {
+            state.oddPolicy = val;
+            saveToLocalStorage();
+        }
+
+        // Render Draw Section & VS Stage
+        function renderDrawSection() {
+            const container = document.getElementById('vs-stage-container');
+            const emptyState = document.getElementById('draw-empty-state');
+            const btnReset = document.getElementById('btn-reset-draw');
+
+            if (state.pairs.length === 0) {
+                container.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                btnReset.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            btnReset.classList.remove('hidden');
+
+            const pair = state.pairs[state.currentPairIndex];
+            if (!pair) return;
+
+            document.getElementById('current-battle-badge').innerText = `BATTLE ${state.currentPairIndex + 1} / ${state.pairs.length}`;
+            document.getElementById('current-round-label').innerText = state.roundName;
+            document.getElementById('display-battle-num').innerText = `Match #${pair.matchNum}`;
+
+            // Sound A
+            document.getElementById('display-sound-a').innerText = pair.soundA.name;
+            document.getElementById('display-origin-a').innerText = `Asal: ${pair.soundA.origin || '-'}`;
+
+            // Sound B
+            document.getElementById('display-sound-b').innerText = pair.soundB.name;
+            document.getElementById('display-origin-b').innerText = `Asal: ${pair.soundB.origin || '-'}`;
+
+            // Winner banner
+            const banner = document.getElementById('winner-banner');
+            const winnerDisplay = document.getElementById('winner-name-display');
+            if (pair.winner) {
+                banner.classList.remove('hidden');
+                winnerDisplay.innerText = pair.winner.name;
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        function nextBattle() {
+            if (state.currentPairIndex < state.pairs.length - 1) {
+                state.currentPairIndex++;
+                renderDrawSection();
+            } else {
+                showToast("Ini adalah battle terakhir.", "error");
+            }
+        }
+
+        function prevBattle() {
+            if (state.currentPairIndex > 0) {
+                state.currentPairIndex--;
+                renderDrawSection();
+            } else {
+                showToast("Ini adalah battle pertama.", "error");
+            }
+        }
+
+        function setWinner(side) {
+            const pair = state.pairs[state.currentPairIndex];
+            if (!pair) return;
+            const chosen = side === 0 ? pair.soundA : pair.soundB;
+            if (chosen.id === 0) {
+                showToast("BYE tidak bisa dipilih sebagai pemenang manual karena lolos otomatis.", "error");
+                return;
+            }
+            pair.winner = chosen;
+            saveToLocalStorage();
+            renderDrawSection();
+            renderRecapTable();
+            showToast(`Pemenang ditentukan: ${chosen.name}!`);
+        }
+
+        // All Pairs Modal
+        function openAllPairsModal() {
+            const listContainer = document.getElementById('all-pairs-modal-list');
+            listContainer.innerHTML = '';
+            state.pairs.forEach((p, idx) => {
+                const div = document.createElement('div');
+                div.className = 'p-4 rounded-2xl bg-zinc-900 border border-battle-border flex items-center justify-between';
+                div.innerHTML = `
+                    <span class="text-xs font-mono text-zinc-500">Match #${p.matchNum}</span>
+                    <div class="text-center font-bold text-white text-sm">
+                        <span class="text-red-400">${escapeHtml(p.soundA.name)}</span> 
+                        <span class="text-zinc-500 mx-2">VS</span> 
+                        <span class="text-amber-400">${escapeHtml(p.soundB.name)}</span>
+                    </div>
+                    <span class="text-xs font-semibold text-green-400">${p.winner ? p.winner.name : 'Belum ada'}</span>
+                `;
+                listContainer.appendChild(div);
+            });
+            openModal('modal-all-pairs');
+        }
+
+        // Render Recap Table & Tournament
+        function renderRecapTable() {
+            const tbody = document.getElementById('recap-table-body');
+            const emptyState = document.getElementById('recap-empty-state');
+            tbody.innerHTML = '';
+
+            document.getElementById('recap-round-name').innerText = state.roundName;
+            if (state.drawTimestamp) {
+                document.getElementById('recap-timestamp').innerText = `Waktu Undian: ${state.drawTimestamp}`;
+            }
+
+            if (state.pairs.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            state.pairs.forEach((p, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-zinc-900/60 transition';
+                tr.innerHTML = `
+                    <td class="p-4 sm:px-6 font-mono text-xs text-zinc-400">Match #${p.matchNum}</td>
+                    <td class="p-4 sm:px-6 font-bold text-red-400">${escapeHtml(p.soundA.name)}</td>
+                    <td class="p-4 sm:px-6 text-center font-display font-black text-zinc-600">VS</td>
+                    <td class="p-4 sm:px-6 font-bold text-amber-400">${escapeHtml(p.soundB.name)}</td>
+                    <td class="p-4 sm:px-6 font-semibold text-green-400">${p.winner ? escapeHtml(p.winner.name) : '<span class="text-zinc-500 italic">Belum Diputuskan</span>'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function advanceWinnersToNextRound() {
+            const winners = state.pairs.map(p => p.winner).filter(w => w !== null && w.id !== 0);
+            if (winners.length === 0) {
+                showToast("Belum ada pemenang yang ditentukan di babak ini!", "error");
+                return;
+            }
+
+            const nextRoundName = prompt("Masukkan nama babak berikutnya (contoh: Perempat Final / Semifinal):", "Perempat Final");
+            if (!nextRoundName) return;
+
+            state.roundName = nextRoundName.trim();
+            state.participants = winners;
+            state.pairs = [];
+            state.currentPairIndex = 0;
+            state.drawTimestamp = null;
+            saveToLocalStorage();
+            renderAll();
+            showToast(`Berhasil maju ke babak ${state.roundName} dengan ${winners.length} peserta pemenang!`);
+        }
+
+        // Settings Save
+        function saveSettings() {
+            state.eventName = document.getElementById('setting-event-name').value.trim() || state.eventName;
+            state.battleTitle = document.getElementById('setting-battle-title').value.trim() || state.battleTitle;
+            state.roundName = document.getElementById('setting-round-name').value.trim() || state.roundName;
+            state.eventLocation = document.getElementById('setting-event-location').value.trim() || state.eventLocation;
+            saveToLocalStorage();
+            renderAll();
+            showToast("Pengaturan berhasil disimpan!");
+        }
+
+        // Export Backup JSON
+        function exportBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `battle_sound_backup_${Date.now()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("Cadangan data berhasil diunduh!");
+        }
+
+        // Print and WhatsApp Sharing
+        function printResults() {
+            window.print();
+        }
+
+        function copyWhatsAppResults() {
+            if (state.pairs.length === 0) {
+                showToast("Belum ada hasil battle untuk dibagikan.", "error");
+                return;
+            }
+            let text = `🔥 *${state.eventName}* 🔥\n_${state.battleTitle}_\n*${state.roundName}*\n\n📋 *HASIL PASANGAN BATTLE:*\n`;
+            state.pairs.forEach((p, idx) => {
+                text += `\nMatch #${p.matchNum}: *${p.soundA.name}* VS *${p.soundB.name}*`;
+                if (p.winner) text += `\n🏆 Pemenang: *${p.winner.name}*`;
+            });
+            text += `\n\n📍 Lokasi: ${state.eventLocation}\n⏱️ Waktu Undian: ${state.drawTimestamp || '-'}`;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast("Hasil battle berhasil disalin ke clipboard! Siap dikirim ke WhatsApp.");
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast("Hasil battle berhasil disalin!");
+            } catch (err) {
+                showToast("Gagal menyalin teks.", "error");
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // Fullscreen and Presentation Mode
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast("Gagal mengaktifkan mode layar penuh.", "error");
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function openPresentationMode() {
+            switchTab('draw');
+            toggleFullscreen();
+            showToast("Mode Presentasi Videotron Aktif!");
+        }
+
+        // HTML Escape helper
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>
